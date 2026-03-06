@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ファイルビューア — 鉄緑会</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --B:#1b5cb0;--BD:#154d99;--RD:#cc2b2b;
+  --F:'Hiragino Sans','Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif;
+}
+html,body{height:100%;font-family:var(--F);background:#525659;overflow:hidden;}
+
+/* ── トップバー ── */
+#bar{
+  position:fixed;top:0;left:0;right:0;height:52px;
+  background:#1a2233;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;gap:12px;z-index:100;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+#bar-title{
+  color:#fff;font-size:14px;font-weight:700;flex:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#bar-btns{display:flex;gap:8px;flex-shrink:0;}
+.bar-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:7px 14px;border-radius:7px;border:none;
+  font-size:13px;font-weight:700;font-family:var(--F);
+  cursor:pointer;transition:background .14s;text-decoration:none;line-height:1;
+}
+.bar-btn-back{background:rgba(255,255,255,.15);color:#fff;}
+.bar-btn-back:hover{background:rgba(255,255,255,.25);}
+
+/* ── iframe ── */
+#viewer{
+  position:fixed;top:52px;left:0;right:0;bottom:0;
+  width:100%;border:none;background:#525659;
+}
+
+/* ── エラー画面 ── */
+#error{
+  display:none;position:fixed;inset:0;top:52px;
+  align-items:center;justify-content:center;flex-direction:column;
+  gap:16px;background:#525659;color:#fff;text-align:center;padding:24px;
+}
+#error.show{display:flex;}
+#error h2{font-size:18px;}
+#error p{font-size:13px;opacity:.7;line-height:1.7;}
+#error a{
+  display:inline-block;margin-top:8px;
+  padding:10px 24px;background:var(--B);color:#fff;
+  border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;
+}
+#error a:hover{background:var(--BD);}
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <span id="bar-title">ファイルビューア</span>
+  <div id="bar-btns">
+    <button class="bar-btn bar-btn-back" onclick="history.back()">← 戻る</button>
+  </div>
+</div>
+
+<iframe id="viewer" src="" allowfullscreen></iframe>
+
+<div id="error">
+  <h2>⚠️ ファイルを表示できません</h2>
+  <p>URLが正しくないか、ファイルへのアクセス権限がない可能性があります。<br>GitHubリポジトリにPDFを置いている場合、ファイルのパスを確認してください。</p>
+  <a id="error-link" href="#" target="_blank" rel="noopener">別タブで開く</a>
+</div>
+
+<script>
+(function(){
+  // URLパラメータからPDFのURLとタイトルを取得
+  const params=new URLSearchParams(location.search);
+  const fileUrl=params.get('url');
+  const title=params.get('title');
+
+  if(title){
+    document.title=title+' — 鉄緑会';
+    document.getElementById('bar-title').textContent=title;
+  }
+
+  if(!fileUrl){
+    document.getElementById('error').classList.add('show');
+    return;
+  }
+
+  document.getElementById('error-link').href=fileUrl;
+
+  const iframe=document.getElementById('viewer');
+  iframe.src=fileUrl;
+
+  // 読み込みエラー検知（同一オリジンのみ有効、クロスオリジンは検知不可）
+  iframe.onerror=function(){
+    document.getElementById('error').classList.add('show');
+  };
+})();
+</script>
+</body>
+</html>

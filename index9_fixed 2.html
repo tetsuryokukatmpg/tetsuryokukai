@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>鉄緑会</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --B:#1b5cb0;--BD:#154d99;--BP:#0e3370;--BG:#1e5bac;--BL:#e5edf9;
+  --OR:#f5a100;--OR2:#e49500;--BO:#dde5f2;--TX:#1a2233;--GR:#8a97ab;
+  --GL:#f3f6fb;--RD:#cc2b2b;
+  --F:'Hiragino Sans','Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif;
+}
+html,body{font-family:var(--F);font-size:14px;color:var(--TX);-webkit-font-smoothing:antialiased;}
+body{background:var(--BG);min-height:100vh;}
+
+/* ── SCREENS ── */
+.pg{display:none;min-height:100vh;}
+.pg.on{display:block;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  padding:10px 24px;border-radius:8px;font-size:13px;font-weight:700;
+  color:#fff;background:#1a2233;z-index:9999;opacity:0;transition:opacity .25s;
+  pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center;}
+#toast.show{opacity:1;}
+
+/* ── OVERLAY ── */
+.ov{display:none;position:fixed;inset:0;background:rgba(8,24,60,.5);
+  z-index:800;align-items:center;justify-content:center;padding:16px;}
+.ov.open{display:flex;}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:520px;
+  max-height:90vh;overflow-y:auto;padding:28px 24px;
+  position:relative;box-shadow:0 10px 50px rgba(0,0,0,.22);}
+.mcl{position:absolute;top:12px;right:14px;background:none;border:none;
+  font-size:22px;cursor:pointer;color:var(--GR);width:32px;height:32px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.mcl:hover{background:var(--BL);}
+.modal h3{font-size:16px;font-weight:800;color:var(--B);margin-bottom:18px;}
+
+/* ── FORM ── */
+.fl{display:block;font-size:11.5px;font-weight:700;color:var(--GR);margin:13px 0 4px;letter-spacing:.05em;}
+.fl:first-child{margin-top:0;}
+input[type=text],input[type=password],input[type=email],
+input[type=datetime-local],textarea,select{
+  width:100%;padding:10px 13px;border:1.5px solid var(--BO);border-radius:8px;
+  font-size:14px;font-family:var(--F);color:var(--TX);background:#fff;outline:none;
+  transition:border-color .14s,box-shadow .14s;}
+input:focus,textarea:focus,select:focus{border-color:var(--B);box-shadow:0 0 0 3px rgba(27,92,176,.11);}
+textarea{resize:vertical;min-height:72px;line-height:1.65;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.cbrow{display:flex;align-items:center;gap:8px;margin-top:10px;}
+.cbrow input[type=checkbox]{width:16px;height:16px;accent-color:var(--B);cursor:pointer;flex-shrink:0;}
+.cbrow label{cursor:pointer;margin:0;font-size:13.5px;font-weight:500;color:var(--TX);}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;
+  padding:10px 20px;border-radius:8px;border:none;font-size:13.5px;font-weight:700;
+  cursor:pointer;font-family:var(--F);transition:all .14s;line-height:1;}
+.btn-b{background:var(--B);color:#fff;}.btn-b:hover{background:var(--BD);}
+.btn-o{background:var(--OR);color:#fff;}.btn-o:hover{background:var(--OR2);}
+.btn-r{background:var(--RD);color:#fff;}.btn-r:hover{background:#a31f1f;}
+.btn-g{background:var(--GL);color:var(--TX);}.btn-g:hover{background:#e2e8f4;}
+.btn-fw{width:100%;margin-top:14px;}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:7px;}
+.dz{border:2px dashed var(--BO);border-radius:8px;padding:16px;text-align:center;
+  cursor:pointer;font-size:13px;color:var(--GR);margin-top:5px;}
+.dz:hover{border-color:var(--B);background:#f0f6ff;color:var(--B);}
+.dz input{display:none;}
+.fn{font-size:12.5px;color:var(--B);margin-top:5px;word-break:break-all;}
+
+/* ══════════════════════════════
+   LOGIN  ← ビル写真背景・完全忠実
+══════════════════════════════ */
+#pg-login{
+  position:fixed;inset:0;z-index:200;
+  display:none;
+  align-items:center;justify-content:center;
+  padding:24px;
+  background: linear-gradient(135deg, #154d99 0%, #1e5bac 40%, #1a4f9c 100%);
+}
+#pg-login.on{display:flex;}
+#pg-login::before{
+  content:'';position:absolute;inset:0;
+  background:rgba(14,51,112,.62);pointer-events:none;
+}
+.lcard{position:relative;z-index:1;width:100%;max-width:680px;
+  display:flex;flex-direction:column;align-items:center;}
+.ltitle{color:#fff;font-size:54px;font-weight:900;letter-spacing:.15em;
+  margin-bottom:36px;text-shadow:0 2px 18px rgba(0,0,0,.22);font-feature-settings:"palt";}
+.lf{width:100%;position:relative;margin-bottom:14px;}
+.lf input{width:100%;height:58px;border-radius:8px;border:none;background:#fff;
+  padding:0 54px 0 20px;font-size:15px;font-family:var(--F);color:#333;outline:none;}
+.lf input::placeholder{color:#b2bcc9;}
+.lf input:focus{box-shadow:inset 0 0 0 2.5px rgba(27,92,176,.35);}
+.lico{position:absolute;right:18px;top:50%;transform:translateY(-50%);pointer-events:none;}
+.lbtn{width:100%;height:58px;margin-top:4px;border-radius:8px;border:none;
+  background:var(--OR);color:#fff;font-size:18px;font-weight:800;letter-spacing:.2em;
+  font-family:var(--F);cursor:pointer;transition:background .14s;}
+.lbtn:hover{background:var(--OR2);}
+.lerr{color:#ffe4e4;font-size:13px;font-weight:600;margin-top:10px;text-align:center;min-height:18px;}
+.asw{margin-top:20px;color:rgba(255,255,255,.50);font-size:12.5px;cursor:pointer;
+  text-decoration:underline;}
+.asw:hover{color:rgba(255,255,255,.85);}
+
+/* ══════════════════════════════
+   HOME
+══════════════════════════════ */
+#pg-home{background:#1b5cb0;min-height:100vh;padding-bottom:48px;}
+
+/* タイトル */
+.h-hd{text-align:center;padding:36px 14px 24px;}
+.h-hd h1{color:#fff;font-size:48px;font-weight:900;letter-spacing:.14em;font-feature-settings:"palt";
+  text-shadow:0 1px 6px rgba(0,0,0,.12);}
+
+/* コンテンツ幅 */
+.h-in{max-width:920px;margin:0 auto;padding:0 20px;}
+
+/* お知らせカード */
+.nc{background:#fff;border-radius:12px;padding:20px 24px 12px;margin-bottom:20px;}
+.nc-hd{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;
+  color:var(--B);margin-bottom:10px;}
+.nc-i{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--B);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:900;font-style:italic;color:var(--B);flex-shrink:0;font-family:Georgia,serif;}
+.ni{display:flex;align-items:center;flex-wrap:wrap;gap:6px;
+  padding:8px 4px;border-bottom:1px solid #edf2fa;cursor:pointer;
+  border-radius:4px;transition:background .12s;}
+.ni:last-child{border-bottom:none;}
+.ni:hover{background:#f2f6ff;}
+.ni-left{display:flex;align-items:center;gap:6px;flex:1;min-width:0;}
+.ni-dt{color:#4e6080;font-size:13px;white-space:nowrap;
+  min-width:140px;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.dl-t{background:#1b5cb0;color:#fff;font-size:10.5px;font-weight:800;
+  padding:2px 7px;border-radius:4px;flex-shrink:0;}
+.pv-t{background:#fff3d0;color:#7a4d00;font-size:10.5px;font-weight:800;
+  padding:2px 7px;border-radius:4px;flex-shrink:0;border:1px solid #f5c842;}
+.ni-tx{color:#1b5cb0;font-weight:700;font-size:14px;line-height:1.4;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ni-arr{display:none;}
+.ni-unread{width:8px;height:8px;border-radius:50%;background:var(--OR);flex-shrink:0;}
+
+/* メニューグリッド — 3列・2列 */
+.mg3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;}
+.mg2{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+.mc{background:#fff;border-radius:10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px 8px 18px;gap:10px;cursor:pointer;min-height:118px;
+  border:none;outline:none;position:relative;
+  transition:background .14s;}
+.mc:hover{background:#eef4ff;}
+.mc:active{background:#dce9ff;}
+/* 旧スタイル互換：mc-iconラッパーなし */
+.mc-icon{display:contents;}
+.mc-icon svg,.mc>svg{width:40px;height:40px;fill:#1b5cb0;}
+.mc span.mc-lbl,.mc>span:not(.unread-dot){
+  color:#1b5cb0;font-size:13.5px;font-weight:700;text-align:center;line-height:1.3;}
+
+/* ボトムボタン */
+.bbs{display:flex;flex-direction:column;gap:10px;}
+.bb{width:100%;height:54px;
+  background:rgba(255,255,255,.17);border:none;
+  border-radius:10px;color:#fff;font-size:16px;font-weight:700;letter-spacing:.1em;
+  font-family:var(--F);cursor:pointer;transition:background .14s;}
+.bb:hover{background:rgba(255,255,255,.27);}
+.bb-logout{background:rgba(255,255,255,.17);}
+.bb-logout:hover{background:rgba(255,255,255,.27);}
+
+/* ══════════════════════════════
+   LIST  ← Image2完全忠実
+   青背景・「鉄緑会」+セクション名・白カード・右矢印
+══════════════════════════════ */
+#pg-list{background:var(--BG);}
+.pg-hd{text-align:center;padding:32px 14px 10px;}
+.pg-hd h1{color:#fff;font-size:42px;font-weight:900;letter-spacing:.12em;font-feature-settings:"palt";}
+.pg-hd h2{color:#fff;font-size:17px;font-weight:400;margin-top:6px;letter-spacing:.05em;}
+.pg-bd{max-width:1160px;margin:0 auto;padding:12px 20px 100px;}
+.li{background:#fff;border-radius:10px;padding:14px 48px 14px 18px;
+  margin-bottom:10px;cursor:pointer;position:relative;transition:background .12s;}
+.li:hover{background:#f0f5ff;}
+.li::after{content:'›';position:absolute;right:17px;top:50%;
+  transform:translateY(-50%);font-size:26px;color:var(--B);font-weight:300;line-height:1;}
+.li-dt{display:block;color:#4a6490;font-size:13px;margin-bottom:4px;font-variant-numeric:tabular-nums;}
+.li-tx{display:block;color:var(--B);font-weight:800;font-size:15px;line-height:1.4;}
+
+/* 戻るボタン (Image2: 白丸・左下固定) */
+.bk{position:fixed;bottom:28px;left:24px;width:52px;height:52px;
+  border-radius:50%;background:#fff;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 14px rgba(0,0,0,.18);transition:background .14s;z-index:100;}
+.bk:hover{background:#eef4ff;}
+.bk svg{width:24px;height:24px;fill:var(--B);}
+
+/* ══════════════════════════════
+   DETAIL
+══════════════════════════════ */
+#pg-detail{background:var(--BG);}
+.det-bd{max-width:1160px;margin:0 auto;padding:12px 20px 100px;}
+.det-card{background:#fff;border-radius:10px;padding:26px 28px;}
+.det-dt{display:block;color:#4a6490;font-size:14px;margin-bottom:6px;font-variant-numeric:tabular-nums;}
+.det-ttl{display:block;color:var(--B);font-weight:900;font-size:18px;margin-bottom:18px;line-height:1.4;}
+.det-txt{color:#2a3a50;font-size:15px;line-height:1.85;margin-bottom:20px;white-space:pre-wrap;}
+.pdf-btn{display:flex;align-items:center;gap:12px;width:100%;padding:15px 18px;
+  border:1.5px solid #c8d8f0;border-radius:8px;background:#fff;color:#2a3a50;
+  font-size:15px;font-weight:500;font-family:var(--F);cursor:pointer;text-align:left;
+  transition:background .14s;text-decoration:none;}
+.pdf-btn:hover{background:var(--BL);}
+.pdf-btn svg{width:20px;height:20px;fill:var(--B);flex-shrink:0;}
+
+
+
+
+/* ══════════════════════════════
+   ADMIN
+══════════════════════════════ */
+#pg-admin{background:#edf1f8;}
+.a-hd{background:var(--BP);height:56px;padding:0 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,0,0,.20);}
+.a-hd h1{color:#fff;font-size:17px;font-weight:900;}
+.a-lo{background:rgba(255,255,255,.14);border:none;color:rgba(255,255,255,.80);
+  font-size:12.5px;font-weight:600;padding:6px 15px;border-radius:7px;
+  cursor:pointer;font-family:var(--F);transition:background .14s;}
+.a-lo:hover{background:rgba(255,255,255,.24);color:#fff;}
+.tabs{background:var(--BD);display:flex;padding:0 14px;overflow-x:auto;}
+.tabs::-webkit-scrollbar{display:none;}
+.tbtn{background:none;border:none;color:rgba(255,255,255,.55);font-size:13px;
+  font-weight:700;padding:13px 18px;cursor:pointer;font-family:var(--F);
+  border-bottom:3px solid transparent;transition:all .14s;white-space:nowrap;}
+.tbtn.on{color:#fff;border-bottom-color:var(--OR);}.tbtn:hover{color:#fff;}
+.ab{max-width:960px;margin:0 auto;padding:20px 14px;}
+.asc{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;
+  box-shadow:0 1px 8px rgba(10,40,100,.07);}
+.asc h2{font-size:14.5px;font-weight:800;color:var(--B);margin-bottom:14px;
+  padding-bottom:9px;border-bottom:2px solid var(--BL);}
+.dtbl{width:100%;border-collapse:collapse;font-size:13px;}
+.dtbl th{background:#f0f5fb;color:var(--B);font-weight:800;padding:9px 11px;
+  text-align:left;font-size:11.5px;letter-spacing:.04em;}
+.dtbl td{padding:9px 11px;border-bottom:1px solid var(--BO);vertical-align:middle;}
+.dtbl tr:last-child td{border-bottom:none;}
+.dtbl tr:hover td{background:#f8fbff;}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:800;}
+.tg-b{background:var(--B);color:#fff;}.tg-g{background:#e6f4ea;color:#256029;}
+.tg-o{background:#fff8e0;color:#7a4400;}
+.acts{display:flex;gap:5px;flex-wrap:wrap;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}
+.chip{background:var(--BL);color:var(--B);padding:4px 13px;border-radius:20px;
+  font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:all .14s;user-select:none;}
+.chip.on{background:var(--B);color:#fff;}
+.chip-a{background:#fff8e0;color:#7a4400;}.chip-a.on{background:#d06000;color:#fff;}
+code{background:#f0f5fc;padding:2px 7px;border-radius:4px;font-size:11.5px;}
+
+/* ── UNREAD DOT ── */
+.unread-dot{display:none;position:absolute;top:10px;right:10px;
+  width:13px;height:13px;border-radius:50%;
+  background:var(--OR);border:2px solid #fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.18);}
+.unread-dot.on{display:block;}
+/* 一覧の未読マーク */
+.li-unread{display:inline-block;width:9px;height:9px;border-radius:50%;
+  background:var(--OR);margin-right:7px;vertical-align:middle;flex-shrink:0;}
+/* ホームお知らせ行の未読マーク */
+.ni-unread{width:8px;height:8px;border-radius:50%;
+  background:var(--OR);flex-shrink:0;}
+@media(max-width:480px){
+  /* ホーム */
+  .h-hd{height:50px;padding:0 14px;}
+  .h-hd-logo{font-size:17px;}
+  .h-in{padding:14px 12px 0;}
+  .h-welcome{padding:14px 16px;gap:10px;}
+  .h-welcome-icon{width:38px;height:38px;}
+  .h-welcome-txt strong{font-size:14px;}
+  .nc-hd{padding:12px 14px 10px;}
+  .ni{padding:10px 14px;}
+  .ni-dt{font-size:11px;}
+  .ni-tx{font-size:13px;}
+  .mg3,.mg2{gap:8px;}
+  .mc{padding:16px 6px 14px;min-height:90px;gap:8px;border-radius:12px;}
+  .mc-icon{width:36px;height:36px;border-radius:10px;}
+  .mc-icon svg{width:20px;height:20px;}
+  .mc span.mc-lbl{font-size:11px;}
+  .bbs{gap:8px;}
+  .bb{height:46px;font-size:13px;}
+  /* その他 */
+  .ltitle{font-size:36px;}
+  .pg-hd h1{font-size:26px;}
+  .pg-hd h2{font-size:15px;}
+  .pg-bd,.det-bd{padding:10px 12px 100px;}
+  .g2{grid-template-columns:1fr;}
+  .modal{padding:20px 14px;}
+  .tabs{padding:0 4px;}.tbtn{padding:10px 12px;font-size:12px;}
+  .ab{padding:12px 10px;}.asc{padding:14px 12px;}
+  .dtbl{font-size:12px;}.dtbl th,.dtbl td{padding:7px 6px;}
+}
+@media(min-width:481px) and (max-width:768px){
+  .h-in{max-width:100%;padding:16px 20px 0;}
+  .mc{min-height:100px;}
+  .pg-bd,.det-bd{padding:12px 16px 100px;}
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+
+<!-- ══ LOGIN ══ -->
+<div id="pg-login" class="pg">
+  <div class="lcard">
+    <div class="ltitle">鉄緑会</div>
+    <div class="lf">
+      <input type="text" id="li-id" placeholder="ログインID" autocomplete="username"/>
+      <span class="lico"><svg width="22" height="22" viewBox="0 0 24 24" fill="#bcc5d3"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.34 0-10 1.68-10 5v2h20v-2c0-3.32-6.66-5-10-5z"/></svg></span>
+    </div>
+    <div class="lf">
+      <input type="password" id="li-pw" placeholder="パスワード" autocomplete="current-password"/>
+      <span class="lico"><svg width="22" height="22" viewBox="0 0 24 24" fill="#bcc5d3"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></span>
+    </div>
+    <button class="lbtn" onclick="doLogin()">ログイン</button>
+    <div class="lerr" id="lerr"></div>
+    <span class="asw" onclick="openAdminOv()">管理者ログインはこちら</span>
+  </div>
+</div>
+
+<!-- ══ HOME ══ -->
+<div id="pg-home" class="pg">
+  <div class="h-hd"><h1>鉄緑会</h1></div>
+  <div class="h-in">
+    <div class="nc">
+      <div class="nc-hd"><span class="nc-i">i</span>最近のお知らせ</div>
+      <div id="home-n"></div>
+    </div>
+    <div class="mg3">
+      <button class="mc" id="mc-notices" onclick="openList('notices')">
+        <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        <span>お知らせ</span>
+        <span class="unread-dot" id="dot-notices"></span>
+      </button>
+      <button class="mc" onclick="toast('準備中です')">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.34 0-10 1.68-10 5v2h20v-2c0-3.32-6.66-5-10-5z"/></svg>
+        <span>遅刻・欠席連絡</span>
+      </button>
+      <button class="mc" onclick="toast('準備中です')">
+        <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zm-5-7l-8 5V6l8 5z"/></svg>
+        <span>WEB配信授業</span>
+      </button>
+    </div>
+    <div class="mg2">
+      <button class="mc" id="mc-attach" onclick="openList('attach')">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+        <span>個別送付物</span>
+        <span class="unread-dot" id="dot-attach"></span>
+      </button>
+      <button class="mc" onclick="toast('準備中です')">
+        <svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-2 .9-2 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+        <span>講習申し込み</span>
+      </button>
+      <div></div>
+    </div>
+    <div class="bbs">
+      <button class="bb" onclick="openSinfo()">生徒情報</button>
+      <button class="bb" onclick="doLogout()">ログアウト</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LIST ══ -->
+<div id="pg-list" class="pg">
+  <div class="pg-hd"><h1>鉄緑会</h1><h2 id="list-ttl"></h2></div>
+  <div class="pg-bd" id="list-bd"></div>
+  <button class="bk" onclick="goBack('list')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
+</div>
+
+<!-- ══ DETAIL ══ -->
+<div id="pg-detail" class="pg">
+  <div class="pg-hd"><h1>鉄緑会</h1><h2 id="det-sec"></h2></div>
+  <div class="det-bd">
+    <div class="det-card">
+      <span class="det-dt" id="det-dt"></span>
+      <span class="det-ttl" id="det-ttl"></span>
+      <div class="det-txt" id="det-txt"></div>
+      <div id="det-file"></div>
+    </div>
+  </div>
+  <button class="bk" onclick="goBack('detail')"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
+</div>
+
+<!-- ══ ADMIN ══ -->
+<div id="pg-admin" class="pg">
+  <div class="a-hd"><h1>🛡 管理者パネル — 鉄緑会</h1><button class="a-lo" onclick="doLogout()">ログアウト</button></div>
+  <div class="tabs">
+    <button class="tbtn on" onclick="swTab('nt',this)">📢 お知らせ</button>
+    <button class="tbtn" onclick="swTab('st',this)">👤 生徒管理</button>
+    <button class="tbtn" onclick="swTab('at',this)">📎 個別送付物</button>
+    <button class="tbtn" onclick="swTab('cfg',this)">⚙️ 設定</button>
+  </div>
+  <div class="ab">
+    <div id="tab-nt">
+      <div class="asc"><h2>➕ お知らせを投稿</h2>
+        <label class="fl">タイトル</label><input type="text" id="n-ttl" placeholder="例：中学３年生・会報"/>
+        <label class="fl">本文（任意）</label><textarea id="n-bdy" placeholder="詳細内容…"></textarea>
+        <div class="g2">
+          <div><label class="fl">日時</label><input type="datetime-local" id="n-dt"/></div>
+          <div style="display:flex;align-items:flex-end;padding-bottom:2px;"><div class="cbrow"><input type="checkbox" id="n-dl"/><label for="n-dl">DLバッジを付ける</label></div></div>
+        </div>
+        <label class="fl">ファイル添付（任意）</label>
+        <div class="dz" onclick="document.getElementById('n-f').click()">📎 クリックしてファイルを選択<input type="file" id="n-f" accept=".pdf,.doc,.docx,.xlsx,.zip" onchange="showFn('n-f','n-fn')"/></div>
+        <div class="fn" id="n-fn"></div>
+        <div class="cbrow" style="margin-top:13px;"><input type="checkbox" id="n-prv" onchange="togPriv()"/><label for="n-prv">特定の生徒のみに送信する</label></div>
+        <div id="n-sel" style="display:none;margin-top:9px;"><label class="fl">送信対象</label><div class="chips" id="chips-n"></div></div>
+        <div class="cbrow" style="margin-top:13px;"><input type="checkbox" id="n-ml"/><label for="n-ml">📧 対象の生徒・保護者にメール通知を送る</label></div>
+        <button class="btn btn-o btn-fw" onclick="postNotice()">📢 投稿する</button>
+      </div>
+      <div class="asc"><h2>📋 お知らせ一覧</h2>
+        <div style="overflow-x:auto;"><table class="dtbl"><thead><tr><th>日時</th><th>タイトル</th><th>DL</th><th>対象</th><th>操作</th></tr></thead><tbody id="nt-tb"></tbody></table></div>
+      </div>
+    </div>
+    <div id="tab-st" style="display:none;">
+      <div class="asc"><h2>➕ 生徒を追加</h2>
+        <div class="g2"><div><label class="fl">氏名</label><input type="text" id="s-nm" placeholder="田中 太郎"/></div><div><label class="fl">学年</label><select id="s-gr"><option value="">選択</option><option>中学1年生</option><option>中学2年生</option><option>中学3年生</option><option>高校1年生</option><option>高校2年生</option><option>高校3年生</option></select></div></div>
+        <div class="g2"><div><label class="fl">ログインID</label><input type="text" id="s-id" placeholder="2B-12345-ABC"/></div><div><label class="fl">パスワード</label><input type="password" id="s-pw" placeholder="pass-XYZ-00"/></div></div>
+        <div class="g2"><div><label class="fl">生徒メール</label><input type="email" id="s-em" placeholder="student@example.com"/></div><div><label class="fl">保護者メール</label><input type="email" id="s-pm" placeholder="parent@example.com"/></div></div>
+        <label class="fl">メモ（任意）</label><input type="text" id="s-mo" placeholder="出席番号 05 など"/>
+        <button class="btn btn-b btn-fw" onclick="addStudent()">👤 追加する</button>
+      </div>
+      <div class="asc"><h2>👥 生徒一覧</h2>
+        <div style="overflow-x:auto;"><table class="dtbl"><thead><tr><th>氏名</th><th>ID</th><th>学年</th><th>生徒メール</th><th>保護者メール</th><th>メモ</th><th>操作</th></tr></thead><tbody id="st-tb"></tbody></table></div>
+      </div>
+    </div>
+    <div id="tab-at" style="display:none;">
+      <div class="asc"><h2>📎 個別送付物を送る</h2>
+        <label class="fl">タイトル</label><input type="text" id="a-ttl" placeholder="例：2025年度中３数学第２回校内模試答案"/>
+        <label class="fl">本文（任意）</label><textarea id="a-bdy" placeholder="内容の説明…"></textarea>
+        <label class="fl">ファイルURL（Google Drive・Dropboxなどの共有リンク）</label>
+        <input type="url" id="a-url" placeholder="https://drive.google.com/file/d/xxxxxxxx/view"/>
+        <p style="font-size:12px;color:var(--GR);margin-top:5px;line-height:1.7;">Google DriveやDropboxなどでファイルを共有し、そのURLを貼り付けてください。<br>Google Driveの場合：ファイルを右クリック →「共有」→「リンクをコピー」</p>
+        <label class="fl">ボタンのラベル（任意）</label>
+        <input type="text" id="a-lbl" placeholder="例：答案PDF・結果表を見る　※空欄の場合「ファイルを開く」になります"/>
+        <div class="cbrow" style="margin-top:11px;"><input type="checkbox" id="a-dl" checked/><label for="a-dl">DLバッジを付ける</label></div>
+        <label class="fl" style="margin-top:13px;">送信先の生徒を選択</label>
+        <div class="chips" id="chips-a"></div>
+        <div class="cbrow" style="margin-top:13px;"><input type="checkbox" id="a-ml"/><label for="a-ml">📧 送信先の生徒・保護者にメール通知を送る</label></div>
+        <button class="btn btn-o btn-fw" onclick="sendAttach()">📤 送信する</button>
+      </div>
+      <div class="asc"><h2>📬 送付物一覧</h2>
+        <div style="overflow-x:auto;"><table class="dtbl"><thead><tr><th>日時</th><th>タイトル</th><th>送信先</th><th>DL</th><th>操作</th></tr></thead><tbody id="at-tb"></tbody></table></div>
+      </div>
+    </div>
+    <div id="tab-cfg" style="display:none;">
+      <div class="asc"><h2>🔐 管理者アカウント</h2>
+        <label class="fl">管理者ログインID</label><input type="text" id="cfg-id"/>
+        <label class="fl">管理者パスワード</label><input type="password" id="cfg-pw"/>
+        <button class="btn btn-b btn-fw" onclick="saveAdmin()">💾 保存する</button>
+      </div>
+      <div class="asc"><h2>📧 EmailJS 設定</h2>
+        <p style="font-size:13px;color:var(--GR);line-height:1.8;margin-bottom:14px;"><a href="https://www.emailjs.com/" target="_blank" style="color:var(--B);font-weight:700;">emailjs.com</a> に無料登録後、設定するとメール送信が有効になります。<br>テンプレート変数：<code>{{to_email}}</code> <code>{{subject}}</code> <code>{{message}}</code></p>
+        <div class="g2"><div><label class="fl">Service ID</label><input type="text" id="ej-sid" placeholder="service_xxxxxxx"/></div><div><label class="fl">Template ID</label><input type="text" id="ej-tid" placeholder="template_xxxxxxx"/></div></div>
+        <label class="fl">Public Key</label><input type="text" id="ej-key" placeholder="xxxxxxxxxxxxxxxxxxxx"/>
+        <button class="btn btn-b btn-fw" onclick="saveEJ()">💾 EmailJS設定を保存</button>
+        <label class="fl" style="margin-top:16px;">テスト送信先</label>
+        <div class="g2" style="margin-top:5px;"><input type="email" id="ej-test" placeholder="test@example.com"/><button class="btn btn-g" style="align-self:end;" onclick="testMail()">🧪 テスト送信</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 確認ダイアログ ══ -->
+<div class="ov" id="ov-confirm">
+  <div class="modal" style="max-width:360px;">
+    <h3 id="cfm-ttl" style="margin-bottom:12px;">確認</h3>
+    <p id="cfm-msg" style="font-size:14px;color:var(--TX);line-height:1.7;margin-bottom:20px;"></p>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-g" style="flex:1;" onclick="cfmCancel()">キャンセル</button>
+      <button class="btn btn-r" style="flex:1;" id="cfm-ok">削除する</button>
+    </div>
+  </div>
+</div>
+<!-- ══ 編集ダイアログ ══ -->
+<div class="ov" id="ov-editN">
+  <div class="modal" style="max-width:480px;">
+    <button class="mcl" onclick="closeOv('ov-editN')">×</button>
+    <h3>✏️ お知らせを編集</h3>
+    <label class="fl">タイトル</label><input type="text" id="en-ttl"/>
+    <label class="fl">本文</label><textarea id="en-bdy"></textarea>
+    <button class="btn btn-b btn-fw" onclick="saveEditN()">💾 保存する</button>
+  </div>
+</div>
+<!-- ══ MODALS ══ -->
+<div class="ov" id="ov-adm">
+  <div class="modal"><button class="mcl" onclick="closeOv('ov-adm')">×</button>
+    <h3>🛡 管理者ログイン</h3>
+    <label class="fl">管理者ID</label><input type="text" id="ali-id"/>
+    <label class="fl">パスワード</label><input type="password" id="ali-pw"/>
+    <div id="ali-err" style="color:#cc2b2b;font-size:13px;font-weight:600;min-height:18px;margin-top:8px;"></div>
+    <button class="btn btn-b btn-fw" onclick="doAdminLogin()">ログイン</button>
+  </div>
+</div>
+<div class="ov" id="ov-si">
+  <div class="modal"><button class="mcl" onclick="closeOv('ov-si')">×</button>
+    <h3>👤 生徒情報</h3><div id="si-bd"></div>
+  </div>
+</div>
+<div class="ov" id="ov-es">
+  <div class="modal"><button class="mcl" onclick="closeOv('ov-es')">×</button>
+    <h3>✏️ 生徒情報を編集</h3>
+    <input type="hidden" id="es-i"/>
+    <div class="g2"><div><label class="fl">氏名</label><input type="text" id="es-nm"/></div><div><label class="fl">学年</label><select id="es-gr"><option value="">選択</option><option>中学1年生</option><option>中学2年生</option><option>中学3年生</option><option>高校1年生</option><option>高校2年生</option><option>高校3年生</option></select></div></div>
+    <div class="g2"><div><label class="fl">ログインID</label><input type="text" id="es-id"/></div><div><label class="fl">パスワード</label><input type="password" id="es-pw"/></div></div>
+    <div class="g2"><div><label class="fl">生徒メール</label><input type="email" id="es-em"/></div><div><label class="fl">保護者メール</label><input type="email" id="es-pm"/></div></div>
+    <label class="fl">メモ</label><input type="text" id="es-mo"/>
+    <button class="btn btn-b btn-fw" onclick="saveES()">💾 保存する</button>
+  </div>
+</div>
+
+<script>
+/* ══ DEFAULTS ══ */
+const DEFAULTS={
+  adminId:'admin',adminPw:'admin1234',
+  ej:{sid:'',tid:'',key:''},
+  students:[
+    {id:'1B-64344-XSV',pw:'kui-tfR-22A',name:'デモ生徒',grade:'高校1年生',em:'',pm:'',memo:''}
+  ],
+  notices:[
+    {id:1,title:'中学３年生・会報',body:'会報をお届けします。内容をご確認ください。',date:'2026-01-31T10:30',dl:true,prv:false,tgt:[],file:null},
+    {id:2,title:'新高校１年生・講習案内',body:'新高校１年生向け講習のご案内です。',date:'2026-01-26T12:30',dl:true,prv:false,tgt:[],file:null},
+    {id:3,title:'欠席者動画のパスワードに関しまして',body:'欠席者用動画のパスワードについてのご案内です。',date:'2025-12-23T17:15',dl:false,prv:false,tgt:[],file:null},
+    {id:4,title:'ベネッセ鉄緑会東大模試のご案内（再告知）',body:'ベネッセ鉄緑会東大模試のご案内です。',date:'2025-11-05T16:00',dl:true,prv:false,tgt:[],file:null},
+    {id:5,title:'2025年度第１回中３校内模試講評【転載禁止】',body:'2025年度第１回中３校内模試の講評です。転載禁止。',date:'2025-09-10T17:00',dl:true,prv:false,tgt:[],file:null},
+  ],
+  nid:6,
+  attaches:[
+    {id:1,title:'2025年度 中３数学 総復習テスト結果表【第７回：平面ベクトル】',body:'2025年度中３数学 総復習テスト第７回（平面ベクトル）の結果表をお送りします。',date:'2026-03-03T16:20',dl:false,tgt:['1B-64344-XSV'],file:'個別送付物(PDF)'},
+    {id:2,title:'2025年度中３数学第２回校内模試答案',body:'2025年度中３数学第２回校内模試の答案（受験番号 0501〜1000）をお送りします。ご確認ください。',date:'2026-03-03T11:30',dl:false,tgt:['1B-64344-XSV'],file:'個別送付物(PDF)'},
+    {id:3,title:'2025年度中３英語第２回校内模試答案',body:'2025年度中３英語第２回校内模試の答案をお送りします。ご確認ください。',date:'2026-03-03T10:00',dl:false,tgt:['1B-64344-XSV'],file:'個別送付物(PDF)'},
+    {id:4,title:'中学３年生・第２回校内模試受験票（マイページ発信）',body:'第２回校内模試の受験票をお送りします。',date:'2026-02-07T21:00',dl:false,tgt:['1B-64344-XSV'],file:'個別送付物(PDF)'},
+    {id:5,title:'中３御家庭宛報告書【2025年度第３期（2025年10月〜12月）】',body:'御家庭宛の報告書をお送りします。ご確認ください。',date:'2026-01-23T19:00',dl:false,tgt:['1B-64344-XSV'],file:'個別送付物(PDF)'},
+    {id:6,title:'2025年度 中３英語 総復習テスト結果表【第５回】',body:'英語総復習テスト第５回の結果表です。',date:'2026-01-20T17:00',dl:false,tgt:['1B-64344-XSV'],file:'個別送付物(PDF)'},
+    {id:7,title:'2025年度 中３数学 総復習テスト結果表【第６回：積分】',body:'数学総復習テスト第６回（積分）の結果表です。',date:'2026-01-13T16:00',dl:false,tgt:['1B-64344-XSV'],file:'個別送付物(PDF)'},
+  ],
+  aid:8,
+};
+
+/* ══ STORAGE HELPERS ══ */
+const LS_KEY='tetsurokukai_v1';
+function lsLoad(){try{const d=localStorage.getItem(LS_KEY);return d?JSON.parse(d):null;}catch(e){return null;}}
+function lsSave(){
+  try{
+    localStorage.setItem(LS_KEY,JSON.stringify({
+      adminId:S.adminId,adminPw:S.adminPw,ej:S.ej,
+      students:S.students,notices:S.notices,nid:S.nid,
+      attaches:S.attaches,aid:S.aid,
+    }));
+  }catch(e){console.warn('localStorage save failed',e);}
+}
+function lsSaveCur(){
+  try{
+    if(S.cur)localStorage.setItem(LS_KEY+'_cur',JSON.stringify(S.cur));
+    else localStorage.removeItem(LS_KEY+'_cur');
+  }catch(e){}
+}
+function lsLoadCur(){try{const d=localStorage.getItem(LS_KEY+'_cur');return d?JSON.parse(d):null;}catch(e){return null;}}
+
+/* ══ STATE (localStorage から復元、なければデフォルト) ══ */
+const _saved=lsLoad();
+const S={
+  adminId:_saved?.adminId??DEFAULTS.adminId,
+  adminPw:_saved?.adminPw??DEFAULTS.adminPw,
+  ej:_saved?.ej??{...DEFAULTS.ej},
+  cur:null, listType:'notices',
+  students:_saved?.students??JSON.parse(JSON.stringify(DEFAULTS.students)),
+  notices:_saved?.notices??JSON.parse(JSON.stringify(DEFAULTS.notices)),
+  nid:_saved?.nid??DEFAULTS.nid,
+  attaches:_saved?.attaches??JSON.parse(JSON.stringify(DEFAULTS.attaches)),
+  aid:_saved?.aid??DEFAULTS.aid,
+  selN:[], selA:[],
+};
+
+/* ══ UTILS ══ */
+const $=id=>document.getElementById(id);
+const fdt=d=>d.replace('T',' ');
+function nowDt(){const d=new Date();return[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')+'T'+[String(d.getHours()).padStart(2,'0'),String(d.getMinutes()).padStart(2,'0')].join(':');}
+let _tt=null;
+function toast(msg,c='#1a2233'){const t=$('toast');t.textContent=msg;t.style.background=c;t.classList.add('show');if(_tt)clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2600);}
+function showFn(fi,di){const f=$(fi).files[0];$(di).textContent=f?'📄 '+f.name:'';}
+function openOv(id){$(id).classList.add('open');}
+function closeOv(id){$(id).classList.remove('open');}
+
+/* ══ UNREAD / READ TRACKING ══ */
+function readKey(){
+  const sId=S.cur?.type==='student'?S.students[S.cur.idx]?.id:'';
+  return `tetsurokukai_read_${sId}`;
+}
+function loadRead(){try{const d=localStorage.getItem(readKey());return d?new Set(JSON.parse(d)):new Set();}catch(e){return new Set();}}
+function saveRead(set){try{localStorage.setItem(readKey(),JSON.stringify([...set]));}catch(e){}}
+function markRead(key){const s=loadRead();s.add(key);saveRead(s);}
+function isRead(key){return loadRead().has(key);}
+
+/* アイコンの未読バッジ更新 */
+function updateDots(){
+  if(S.cur?.type!=='student')return;
+  const si=S.cur.idx;
+  const sId=S.students[si]?.id;
+  if(!sId)return;
+  const read=loadRead();
+  // お知らせ
+  const unreadN=S.notices.filter(n=>(!n.prv||n.tgt.includes(sId))&&!read.has('n_'+n.id)).length;
+  const dotN=$('dot-notices');
+  if(dotN)dotN.classList.toggle('on',unreadN>0);
+  // 個別送付物
+  const unreadA=S.attaches.filter(a=>a.tgt.includes(sId)&&!read.has('a_'+a.id)).length;
+  const dotA=$('dot-attach');
+  if(dotA)dotA.classList.toggle('on',unreadA>0);
+}
+
+
+function goPage(id){
+  /* すべて非表示 */
+  document.querySelectorAll('.pg').forEach(p=>{p.style.display='none';p.classList.remove('on');});
+  /* 対象だけ表示 */
+  const p=$(id);
+  p.classList.add('on');
+  p.style.display=(id==='pg-login')?'flex':'block';
+  window.scrollTo(0,0);
+}
+function goBack(from){
+  if(from==='detail') goPage('pg-list');
+  else goPage('pg-home');
+}
+
+/* ══ LOGIN ══ */
+function doLogin(){
+  const id=$('li-id').value.trim(), pw=$('li-pw').value;
+  const i=S.students.findIndex(s=>s.id===id&&s.pw===pw);
+  if(i>=0){S.cur={type:'student',idx:i};lsSaveCur();$('lerr').textContent='';renderHN();goPage('pg-home');}
+  else $('lerr').textContent='ログインIDまたはパスワードが正しくありません。';
+}
+function openAdminOv(){$('ali-id').value='';$('ali-pw').value='';$('ali-err').textContent='';openOv('ov-adm');}
+function doAdminLogin(){
+  const id=$('ali-id').value.trim(),pw=$('ali-pw').value;
+  if(id===S.adminId&&pw===S.adminPw){S.cur={type:'admin'};lsSaveCur();closeOv('ov-adm');initAdmin();goPage('pg-admin');}
+  else $('ali-err').textContent='IDまたはパスワードが正しくありません。';
+}
+function doLogout(){S.cur=null;lsSaveCur();$('li-id').value='';$('li-pw').value='';$('lerr').textContent='';goPage('pg-login');}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&$('pg-login').classList.contains('on'))doLogin();});
+
+/* ══ HOME ══ */
+function renderHN(){
+  const si=S.cur?.idx??-1;
+  const sId=si>=0?S.students[si].id:null;
+  const read=loadRead();
+  const vis=S.notices.filter(n=>!n.prv||n.tgt.includes(sId))
+    .slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  $('home-n').innerHTML=vis.length
+    ?vis.map(n=>{
+        const unread=!read.has('n_'+n.id);
+        return `<div class="ni" onclick="openDetFromHome(${n.id})">
+          ${unread?'<span class="ni-unread"></span>':''}
+          <span class="ni-dt">${fdt(n.date)}</span>
+          ${n.dl?'<span class="dl-t">DL</span>':''}
+          ${n.prv?'<span class="pv-t">個別</span>':''}
+          <span class="ni-tx">${n.title}</span>
+        </div>`;
+      }).join('')
+    :'<div style="padding:10px 2px;color:#aaa;font-size:13px;">お知らせはありません</div>';
+  updateDots();
+}
+
+/* ══ LIST ══ */
+function openList(type){
+  S.listType=type;
+  const si=S.cur?.idx??-1;
+  const sId=si>=0?S.students[si].id:null;
+  const read=loadRead();
+  if(type==='notices'){
+    $('list-ttl').textContent='お知らせ';
+    const items=S.notices.filter(n=>!n.prv||n.tgt.includes(sId)).sort((a,b)=>b.date.localeCompare(a.date));
+    $('list-bd').innerHTML=items.length
+      ?items.map(n=>{
+          const unread=!read.has('n_'+n.id);
+          return `<div class="li" onclick="openDet('notices',${n.id})">
+            <span class="li-dt">${fdt(n.date)}</span>
+            <span class="li-tx">${unread?'<span class="li-unread"></span>':''}${n.dl?'<span style="background:var(--B);color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:3px;margin-right:6px;vertical-align:middle;">DL</span>':''}<span>${n.title}</span></span>
+          </div>`;
+        }).join('')
+      :'<p style="color:rgba(255,255,255,.7);text-align:center;padding:40px 0;font-size:15px;">お知らせはありません</p>';
+  }else{
+    $('list-ttl').textContent='個別送付物';
+    const items=S.attaches.filter(a=>a.tgt.includes(sId)).sort((a,b)=>b.date.localeCompare(a.date));
+    $('list-bd').innerHTML=items.length
+      ?items.map(a=>{
+          const unread=!read.has('a_'+a.id);
+          return `<div class="li" onclick="openDet('attach',${a.id})">
+            <span class="li-dt">${fdt(a.date)}</span>
+            <span class="li-tx">${unread?'<span class="li-unread"></span>':''}<span>${a.title}</span></span>
+          </div>`;
+        }).join('')
+      :'<p style="color:rgba(255,255,255,.7);text-align:center;padding:40px 0;font-size:15px;">個別送付物はありません</p>';
+  }
+  goPage('pg-list');
+}
+
+/* ══ DETAIL ══ */
+function openDetFromHome(id){
+  const n=S.notices.find(x=>x.id===id);if(!n)return;
+  S.listType='notices';
+  markRead('n_'+id);
+  renderHN();
+  showDet('お知らせ',fdt(n.date),n.title,n.body||'',n.file,null);
+}
+function openDet(type,id){
+  if(type==='notices'){
+    const n=S.notices.find(x=>x.id===id);if(!n)return;
+    markRead('n_'+id);
+    showDet('お知らせ',fdt(n.date),n.title,n.body||'',n.file,null);
+  }else{
+    const a=S.attaches.find(x=>x.id===id);if(!a)return;
+    markRead('a_'+id);
+    showDet('個別送付物',fdt(a.date),a.title,a.body||'',a.file,a.fileLabel||null);
+  }
+  updateDots();
+}
+/* ══ PDF グローバル一時保持 ══ */
+let _pdfUrl=null,_pdfOrigUrl=null;
+
+function showDet(sec,dt,ttl,body,file,fileLabel){
+  $('det-sec').textContent=sec;
+  $('det-dt').textContent=dt+':00';
+  $('det-ttl').textContent=ttl;
+  $('det-txt').textContent=body;
+  if(file){
+    const lbl=fileLabel||'個別送付物(PDF)';
+    _pdfOrigUrl=file;
+    _pdfUrl=toPreviewUrl(file);
+    $('det-file').innerHTML=`
+      <button class="pdf-btn" id="pdf-open-btn" onclick="openPdfFs()">
+        <svg viewBox="0 0 24 24"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/></svg>
+        ${lbl}
+      </button>`;
+  } else {
+    _pdfUrl=null;_pdfOrigUrl=null;
+    $('det-file').innerHTML='';
+  }
+  goPage('pg-detail');
+}
+
+function toPreviewUrl(url){
+  if(/drive\.google\.com\/file\/d\//.test(url)){
+    return url.replace(/\/view(\?.*)?$/,'/preview').replace(/\/edit(\?.*)?$/,'/preview');
+  }
+  const m=url.match(/[?&]id=([^&]+)/);
+  if(m&&/drive\.google\.com/.test(url)){
+    return `https://drive.google.com/file/d/${m[1]}/preview`;
+  }
+  return url;
+}
+
+function openPdfFs(){
+  if(!_pdfUrl)return;
+  const ttl=encodeURIComponent($('det-ttl').textContent||'');
+  const url=encodeURIComponent(_pdfUrl);
+  // viewer.html は同じリポジトリのルートに置く想定
+  window.open(`viewer.html?url=${url}&title=${ttl}`,'_blank');
+}
+function openSinfo(){
+  const si=S.cur?.idx;if(si==null)return;const s=S.students[si];
+  $('si-bd').innerHTML=`<table class="dtbl"><tbody>
+    <tr><td style="font-weight:800;width:100px;">氏名</td><td>${s.name}</td></tr>
+    <tr><td style="font-weight:800;">学年</td><td>${s.grade||'—'}</td></tr>
+    <tr><td style="font-weight:800;">ID</td><td style="font-family:monospace;">${s.id}</td></tr>
+    <tr><td style="font-weight:800;">メール</td><td>${s.em||'—'}</td></tr>
+    <tr><td style="font-weight:800;">保護者メール</td><td>${s.pm||'—'}</td></tr>
+    <tr><td style="font-weight:800;">メモ</td><td>${s.memo||'—'}</td></tr>
+  </tbody></table>`;
+  openOv('ov-si');
+}
+
+/* ══ ADMIN ══ */
+function initAdmin(){
+  buildChips('chips-n','N');buildChips('chips-a','A');
+  renderNT();renderST();renderAT();
+  $('cfg-id').value=S.adminId;$('cfg-pw').value=S.adminPw;
+  $('ej-sid').value=S.ej.sid;$('ej-tid').value=S.ej.tid;$('ej-key').value=S.ej.key;
+  const nd=$('n-dt');if(nd)nd.value=nowDt();
+}
+function swTab(name,btn){
+  ['nt','st','at','cfg'].forEach(t=>$('tab-'+t).style.display='none');
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));
+  $('tab-'+name).style.display='block';btn.classList.add('on');
+}
+function buildChips(cid,mode){
+  const el=$(cid);el.innerHTML='';
+  if(mode==='A'){const a=document.createElement('span');a.className='chip chip-a';a.textContent='全員';a.onclick=toggleAll;el.appendChild(a);}
+  S.students.forEach(s=>{const c=document.createElement('span');c.className='chip';c.textContent=s.name||s.id;c.dataset.sid=s.id;c.onclick=()=>togChip(c,s.id,mode);el.appendChild(c);});
+}
+function togChip(el,sid,mode){const arr=mode==='N'?S.selN:S.selA;const i=arr.indexOf(sid);if(i>=0){arr.splice(i,1);el.classList.remove('on');}else{arr.push(sid);el.classList.add('on');}}
+function toggleAll(){const chips=document.querySelectorAll('#chips-a .chip:not(.chip-a)');const ab=document.querySelector('#chips-a .chip-a');if(S.selA.length===S.students.length){S.selA.splice(0);chips.forEach(c=>c.classList.remove('on'));ab.classList.remove('on');}else{S.selA.splice(0,...S.students.map(s=>s.id));chips.forEach(c=>c.classList.add('on'));ab.classList.add('on');}}
+function togPriv(){$('n-sel').style.display=$('n-prv').checked?'block':'none';}
+
+/* EmailJS */
+function ejOK(){return S.ej.sid&&S.ej.tid&&S.ej.key;}
+async function sendMail(to,subj,msg){if(!ejOK())return false;try{emailjs.init(S.ej.key);await emailjs.send(S.ej.sid,S.ej.tid,{to_email:to,subject:subj,message:msg});return true;}catch(e){console.error(e);return false;}}
+async function mailTgts(tgts,subj,msg){if(!ejOK())return;let ok=0,ng=0;for(const sid of tgts){const s=S.students.find(x=>x.id===sid);if(!s)continue;for(const addr of[s.em,s.pm].filter(Boolean)){(await sendMail(addr,subj,msg))?ok++:ng++;}}if(ok)toast(`📧 メール送信完了（${ok}件）`,'#1a5e20');if(ng)toast(`⚠️ 送信失敗（${ng}件）`,'#a01010');}
+function saveEJ(){S.ej.sid=$('ej-sid').value.trim();S.ej.tid=$('ej-tid').value.trim();S.ej.key=$('ej-key').value.trim();lsSave();toast('✅ EmailJS設定を保存しました');}
+async function testMail(){const addr=$('ej-test').value.trim();if(!addr){toast('テスト送信先を入力してください','#a01010');return;}if(!ejOK()){toast('EmailJS設定を保存してください','#a01010');return;}const r=await sendMail(addr,'【鉄緑会】テストメール','EmailJSの設定が正しく完了しています。');r?toast('✅ テストメール送信成功','#1a5e20'):toast('❌ 送信失敗。設定を確認してください','#a01010');}
+
+/* Notices */
+async function postNotice(){
+  const title=$('n-ttl').value.trim();if(!title){toast('タイトルを入力してください','#a01010');return;}
+  const f=$('n-f').files[0];const isP=$('n-prv').checked;const tgt=isP?[...S.selN]:[];
+  const n={id:S.nid++,title,body:$('n-bdy').value.trim(),date:$('n-dt').value||nowDt(),dl:$('n-dl').checked,prv:isP,tgt,file:f?f.name:null};
+  S.notices.unshift(n);renderNT();lsSave();
+  $('n-ttl').value='';$('n-bdy').value='';$('n-fn').textContent='';$('n-f').value='';
+  $('n-dl').checked=false;$('n-prv').checked=false;$('n-dt').value=nowDt();
+  S.selN=[];document.querySelectorAll('#chips-n .chip').forEach(c=>c.classList.remove('on'));togPriv();
+  toast('✅ お知らせを投稿しました');
+  if($('n-ml').checked&&ejOK()){const t=isP?tgt:S.students.map(s=>s.id);await mailTgts(t,`【鉄緑会】${n.title}`,`${n.title}\n\n${n.body||''}\n\n鉄緑会ポータルでご確認ください。`);}
+}
+function renderNT(){
+  const tb=$('nt-tb');tb.innerHTML='';
+  [...S.notices].sort((a,b)=>b.date.localeCompare(a.date)).forEach(n=>{
+    const tl=n.prv?n.tgt.length+'名':'全員';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="font-size:12px;white-space:nowrap;">${fdt(n.date)}</td><td>${n.title}${n.file?` <span style="color:var(--B);font-size:11px;">📄</span>`:''}</td><td>${n.dl?'<span class="tag tg-b">DL</span>':''}</td><td><span class="tag ${n.prv?'tg-o':'tg-g'}">${tl}</span></td><td><div class="acts"><button class="btn btn-g btn-sm" onclick="editN(${n.id})">編集</button><button class="btn btn-r btn-sm" onclick="delN(${n.id})">削除</button></div></td>`;
+    tb.appendChild(tr);
+  });
+  if(!S.notices.length)tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:#bbb;padding:20px 0;">投稿がありません</td></tr>';
+}
+/* ══ CONFIRM / PROMPT HELPERS ══ */
+let _cfmCb=null;
+function cfmShow(msg,cb,title='確認'){
+  $('cfm-ttl').textContent=title;
+  $('cfm-msg').textContent=msg;
+  _cfmCb=cb;
+  openOv('ov-confirm');
+}
+function cfmCancel(){closeOv('ov-confirm');_cfmCb=null;}
+$('cfm-ok').onclick=function(){closeOv('ov-confirm');if(_cfmCb){_cfmCb();_cfmCb=null;}};
+
+/* ══ editN モーダル ══ */
+let _editNId=null;
+function editN(id){
+  const n=S.notices.find(x=>x.id===id);if(!n)return;
+  _editNId=id;
+  $('en-ttl').value=n.title;
+  $('en-bdy').value=n.body||'';
+  openOv('ov-editN');
+}
+function saveEditN(){
+  const n=S.notices.find(x=>x.id===_editNId);if(!n)return;
+  const t=$('en-ttl').value.trim();
+  if(t)n.title=t;
+  n.body=$('en-bdy').value;
+  closeOv('ov-editN');
+  renderNT();lsSave();toast('✅ 編集しました');
+}
+
+function delN(id){cfmShow('このお知らせを削除しますか？',()=>{S.notices=S.notices.filter(n=>n.id!==id);renderNT();lsSave();toast('🗑 削除しました');});}
+function delS(i){const nm=S.students[i]?.name||'';cfmShow(`「${nm}」を削除しますか？`,()=>{S.students.splice(i,1);renderST();buildChips('chips-n','N');buildChips('chips-a','A');lsSave();toast('🗑 削除しました');});}
+function delA(id){cfmShow('この送付物を削除しますか？',()=>{S.attaches=S.attaches.filter(a=>a.id!==id);renderAT();lsSave();toast('🗑 削除しました');});}
+/* Students */
+function addStudent(){
+  const nm=$('s-nm').value.trim(),id=$('s-id').value.trim(),pw=$('s-pw').value;
+  if(!nm||!id||!pw){toast('氏名・ID・パスワードを入力してください','#a01010');return;}
+  if(S.students.some(s=>s.id===id)){toast('そのIDはすでに使用されています','#a01010');return;}
+  S.students.push({id,pw,name:nm,grade:$('s-gr').value,em:$('s-em').value.trim(),pm:$('s-pm').value.trim(),memo:$('s-mo').value.trim()});
+  renderST();buildChips('chips-n','N');buildChips('chips-a','A');
+  ['s-nm','s-id','s-pw','s-em','s-pm','s-mo'].forEach(i=>$(i).value='');$('s-gr').value='';
+  lsSave();toast('✅ 生徒を追加しました');
+}
+function renderST(){
+  const tb=$('st-tb');tb.innerHTML='';
+  S.students.forEach((s,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${s.name}</td><td style="font-size:12px;font-family:monospace;">${s.id}</td><td>${s.grade||'—'}</td><td style="font-size:12px;">${s.em||'—'}</td><td style="font-size:12px;">${s.pm||'—'}</td><td style="font-size:12px;">${s.memo||'—'}</td><td><div class="acts"><button class="btn btn-g btn-sm" onclick="openES(${i})">編集</button><button class="btn btn-r btn-sm" onclick="delS(${i})">削除</button></div></td>`;tb.appendChild(tr);});
+  if(!S.students.length)tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:#bbb;padding:20px 0;">生徒がいません</td></tr>';
+}
+
+function openES(i){const s=S.students[i];$('es-i').value=i;$('es-nm').value=s.name;$('es-id').value=s.id;$('es-pw').value=s.pw;$('es-gr').value=s.grade||'';$('es-em').value=s.em||'';$('es-pm').value=s.pm||'';$('es-mo').value=s.memo||'';openOv('ov-es');}
+function saveES(){const i=parseInt($('es-i').value);const nid=$('es-id').value.trim();if(S.students.findIndex((s,j)=>s.id===nid&&j!==i)>=0){toast('そのIDはすでに使用されています','#a01010');return;}S.students[i]={name:$('es-nm').value.trim(),id:nid,pw:$('es-pw').value,grade:$('es-gr').value,em:$('es-em').value.trim(),pm:$('es-pm').value.trim(),memo:$('es-mo').value.trim()};closeOv('ov-es');renderST();buildChips('chips-n','N');buildChips('chips-a','A');lsSave();toast('✅ 保存しました');}
+
+/* Attachments */
+async function sendAttach(){
+  const title=$('a-ttl').value.trim();if(!title){toast('タイトルを入力してください','#a01010');return;}
+  if(!S.selA.length){toast('送信先の生徒を選択してください','#a01010');return;}
+  const url=$('a-url').value.trim();
+  const lbl=$('a-lbl').value.trim();
+  const a={id:S.aid++,title,body:$('a-bdy').value.trim(),date:nowDt(),dl:$('a-dl').checked,tgt:[...S.selA],file:url||null,fileLabel:lbl||null};
+  S.attaches.unshift(a);renderAT();lsSave();
+  $('a-ttl').value='';$('a-bdy').value='';$('a-url').value='';$('a-lbl').value='';$('a-dl').checked=true;
+  S.selA=[];document.querySelectorAll('#chips-a .chip').forEach(c=>c.classList.remove('on'));
+  toast(`✅ 送付物を送信しました（${a.tgt.length}名）`);
+  if($('a-ml').checked&&ejOK()){await mailTgts(a.tgt,`【鉄緑会】個別送付物：${a.title}`,`${a.title}\n\n${a.body||''}\n\n鉄緑会ポータルの「個別送付物」よりご確認ください。`);}
+}
+function renderAT(){
+  const tb=$('at-tb');tb.innerHTML='';
+  S.attaches.forEach(a=>{const nm=a.tgt.map(sid=>{const s=S.students.find(x=>x.id===sid);return s?s.name:sid;}).join('、');const tr=document.createElement('tr');tr.innerHTML=`<td style="font-size:12px;white-space:nowrap;">${fdt(a.date)}</td><td>${a.title}</td><td style="font-size:12px;">${nm}</td><td>${a.dl?'<span class="tag tg-b">DL</span>':''}</td><td><button class="btn btn-r btn-sm" onclick="delA(${a.id})">削除</button></td>`;tb.appendChild(tr);});
+  if(!S.attaches.length)tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:#bbb;padding:20px 0;">送付物がありません</td></tr>';
+}
+
+
+/* Settings */
+function saveAdmin(){const id=$('cfg-id').value.trim(),pw=$('cfg-pw').value;if(!id||!pw){toast('IDとパスワードを入力してください','#a01010');return;}S.adminId=id;S.adminPw=pw;lsSave();toast('✅ 管理者アカウントを更新しました');}
+
+/* ══ BOOT ══ */
+(function(){
+  const savedCur=lsLoadCur();
+  if(savedCur){
+    if(savedCur.type==='student'){
+      // 保存済みidxが有効かチェック（生徒削除などでズレる可能性があるため再検索）
+      const sid=S.students[savedCur.idx]?.id;
+      const newIdx=sid!=null?savedCur.idx:-1;
+      if(newIdx>=0){
+        S.cur={type:'student',idx:newIdx};
+        renderHN();goPage('pg-home');
+        updateDots();
+        return;
+      }
+    } else if(savedCur.type==='admin'){
+      S.cur={type:'admin'};
+      initAdmin();goPage('pg-admin');
+      return;
+    }
+  }
+  goPage('pg-login');
+})();
+</script>
+</body>
+</html>
